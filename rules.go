@@ -234,6 +234,10 @@ func init() {
 			if !isBoolean(t) {
 				return err
 			}
+		case float64:
+			if t != 0 && t != 1 {
+				return err
+			}
 		case int:
 			if t != 0 && t != 1 {
 				return err
@@ -308,6 +312,8 @@ func init() {
 		}
 		rv := reflect.ValueOf(value)
 		switch rv.Kind() {
+		case reflect.Invalid:
+			return err
 		case reflect.String, reflect.Array, reflect.Map, reflect.Slice:
 			inLen := rv.Len()
 			if !(inLen >= min && inLen <= max) {
