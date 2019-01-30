@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math"
 	"mime/multipart"
-	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
@@ -26,7 +25,7 @@ func AddCustomRule(name string, fn func(field string, rule string, message strin
 }
 
 // validateCustomRules validate custom rules
-func validateCustomRules(field string, rule string, message string, value interface{}, errsBag url.Values) {
+func validateCustomRules(field string, rule string, message string, value interface{}, errsBag *ValidationError) {
 	for k, v := range rulesFuncMap {
 		if k == rule || strings.HasPrefix(rule, k+":") {
 			err := v(field, rule, message, value)
@@ -83,7 +82,7 @@ func init() {
 				return err
 			}
 		case reflect.Float64:
-			if isEmpty(value.(float64)) {
+			if isEmpty(value.(float64)) && value.(float64) != 0 {
 				return err
 			}
 		case reflect.Uint:

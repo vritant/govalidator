@@ -1,12 +1,12 @@
 package govalidator
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"reflect"
 	"strings"
+
+	"github.com/thedevsaddam/gojsonq"
 )
 
 const (
@@ -73,12 +73,12 @@ func (v *Validator) SetTagIdentifier(identifier string) {
 // Validate validate request data like form-data, x-www-form-urlencoded and query params
 // see example in README.md file
 // ref: https://github.com/thedevsaddam/govalidator#example
-func (v *Validator) Validate() url.Values {
+func (v *Validator) Validate() *ValidationError {
 	// if request object and rules not passed rise a panic
 	if len(v.Opts.Rules) == 0 || v.Opts.Request == nil {
 		panic(errValidateArgsMismatch)
 	}
-	errsBag := url.Values{}
+	errsBag := &ValidationError{}
 
 	// get non required rules
 	nr := v.getNonRequiredFields()
@@ -139,43 +139,36 @@ func (v *Validator) getNonRequiredFields() map[string]struct{} {
 
 // ValidateJSON validate request data from JSON body to Go struct
 // see example in README.md file
-func (v *Validator) ValidateJSON() url.Values {
+func (v *Validator) ValidateJSON() *ValidationError {
 	if len(v.Opts.Rules) == 0 || v.Opts.Request == nil {
 		panic(errValidateArgsMismatch)
 	}
 	if reflect.TypeOf(v.Opts.Data).Kind() != reflect.Ptr {
 		panic(errRequirePtr)
 	}
-	errsBag := url.Values{}
+	errsBag := &ValidationError{}
 
-	defer v.Opts.Request.Body.Close()
-	err := json.NewDecoder(v.Opts.Request.Body).Decode(v.Opts.Data)
-	if err != nil {
-		errsBag.Add("_error", err.Error())
+	jq := gojsonq.New().Reader(v.Opts.Request.Body)
+	if jq.Error() != nil {
+		errsBag.Add("_error", jq.Error().Error())
 		return errsBag
 	}
-	r := roller{}
-	r.setTagIdentifier(tagIdentifier)
-	if v.Opts.TagIdentifier != "" {
-		r.setTagIdentifier(v.Opts.TagIdentifier)
-	}
-	r.setTagSeparator(tagSeparator)
-	r.start(v.Opts.Data)
-
-	//clean if the key is not exist or value is empty or zero value
-	nr := v.getNonRequiredJSONFields(r.getFlatMap())
 
 	for field, rules := range v.Opts.Rules {
-		if _, ok := nr[field]; ok {
-			continue
-		}
-		value, _ := r.getFlatVal(field)
+		value := jq.Copy().Find(field)
 		for _, rule := range rules {
 			if !isRuleExist(rule) {
 				panic(fmt.Errorf("govalidator: %s is not a valid rule", rule))
 			}
 			msg := v.getCustomMessage(field, rule)
 			validateCustomRules(field, rule, msg, value, errsBag)
+		}
+	}
+
+	if !errsBag.HasError() {
+		jq.Reset().Out(&v.Opts.Data)
+		if err := jq.Error(); err != nil {
+			errsBag.Add("_error", err.Error())
 		}
 	}
 

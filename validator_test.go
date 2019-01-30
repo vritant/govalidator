@@ -39,7 +39,7 @@ func TestValidator_Validate(t *testing.T) {
 	}
 	v := New(opts)
 	validationError := v.Validate()
-	if len(validationError) > 0 {
+	if len(*validationError) > 0 {
 		t.Log(validationError)
 		t.Error("Validate failed to validate correct inputs!")
 	}
@@ -95,7 +95,7 @@ func TestValidator_ValidateJSON(t *testing.T) {
 
 	postUser := User{
 		Name:    "",
-		Email:   "inalid email",
+		Email:   "invalid email",
 		Address: "",
 		Age:     1,
 		Zip:     "122",
@@ -125,7 +125,7 @@ func TestValidator_ValidateJSON(t *testing.T) {
 	vd := New(opts)
 	vd.SetTagIdentifier("json")
 	validationErr := vd.ValidateJSON()
-	if len(validationErr) != 5 {
+	if len(*validationErr) != 5 {
 		t.Error("ValidateJSON failed")
 	}
 }
@@ -165,7 +165,7 @@ func TestValidator_ValidateJSON_NULLValue(t *testing.T) {
 	vd := New(opts)
 	vd.SetTagIdentifier("json")
 	validationErr := vd.ValidateJSON()
-	if len(validationErr) != 2 {
+	if len(*validationErr) != 2 {
 		t.Error("ValidateJSON failed")
 	}
 }
@@ -181,7 +181,7 @@ func TestValidator_ValidateJSON_panic(t *testing.T) {
 
 	vd := New(opts)
 	validationErr := vd.ValidateJSON()
-	if len(validationErr) != 5 {
+	if len(*validationErr) != 5 {
 		t.Error("ValidateJSON failed")
 	}
 }

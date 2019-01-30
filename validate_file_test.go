@@ -54,7 +54,7 @@ func Test_validateFiles(t *testing.T) {
 
 	vd := New(opts)
 	validationErr := vd.Validate()
-	if len(validationErr) != 1 {
+	if len(*validationErr) != 1 {
 		t.Error("file validation failed!")
 	}
 }
@@ -80,7 +80,7 @@ func Test_validateFiles_message(t *testing.T) {
 
 	vd := New(opts)
 	validationErr := vd.Validate()
-	if len(validationErr) != 1 {
+	if len(*validationErr) != 1 {
 		t.Error("file validation failed!")
 	}
 	if validationErr.Get("file") != "custom_message" {

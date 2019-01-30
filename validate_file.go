@@ -3,13 +3,12 @@ package govalidator
 import (
 	"fmt"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 )
 
 // validateFiles validate file size, mimes, extension etc
-func validateFiles(r *http.Request, field, rule, msg string, errsBag url.Values) {
+func validateFiles(r *http.Request, field, rule, msg string, errsBag *ValidationError) {
 	_, _, ext, mime, size, fErr := getFileInfo(r, field)
 	// check size
 	if strings.HasPrefix(rule, "size:") {
