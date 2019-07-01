@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"github.com/globalsign/mgo/bson"
 )
 
 var rulesFuncMap = make(map[string]func(string, string, string, interface{}) error)
@@ -61,6 +62,7 @@ func init() {
 		switch rv.Kind() {
 
 		case reflect.String:
+			// fmt.Println("string found -->",rv.String())
 			if(rv.String() == "<nil>"){
 				return err
 			}
@@ -1087,5 +1089,90 @@ func init() {
 			return err
 		}
 		return nil
+	})
+
+
+	AddCustomRule("exists", func(field string, rule string, message string, value interface{}) error {
+
+		var query_field string
+
+		bits := strings.Split(strings.TrimPrefix(rule, "exists:"), ",")
+
+		if len(bits) == 0 {
+			panic(errInvalidArgument)
+		}
+
+		collection_name := bits[0]
+		value_in_str := toString(value)
+
+		if(len(bits)>1){
+			query_field = bits[1]
+		} else{
+			query_field = field
+		}
+
+		message = "given "+query_field+" does not exist in "+collection_name
+
+		// var result interface{}
+		collection := GlobalV.Opts.Collections[collection_name]
+		var count int
+		var err2 error
+
+		if strings.Contains(query_field, "_id"){
+			count, err2 = collection.Find(bson.M{query_field: bson.ObjectIdHex(value_in_str)}).Count()
+		} else{
+			count, err2 = collection.Find(bson.M{query_field: value_in_str}).Count()
+		}
+
+		if count == 0 {
+			return errors.New(message)
+		} else if err2 != nil{
+			return errors.New(err2.Error())
+		}else{
+			return nil
+		}
+
+	})
+
+	AddCustomRule("unique", func(field string, rule string, message string, value interface{}) error {
+
+		var query_field string
+
+		bits := strings.Split(strings.TrimPrefix(rule, "unique:"), ",")
+
+		if len(bits) == 0 {
+			panic(errInvalidArgument)
+		}
+
+		collection_name := bits[0]
+		value_in_str := toString(value)
+
+		if(len(bits)>1){
+			query_field = bits[1]
+		} else{
+			query_field = field
+		}
+
+		message = "given "+query_field+" already exists in "+collection_name
+
+		// var result interface{}
+		collection := GlobalV.Opts.Collections[collection_name]
+		var count int
+		var err2 error
+
+		if strings.Contains(query_field, "_id"){
+			count, err2 = collection.Find(bson.M{query_field: bson.ObjectIdHex(value_in_str)}).Count()
+		} else{
+			count, err2 = collection.Find(bson.M{query_field: value_in_str}).Count()
+		}
+
+		if count >0 {
+			return errors.New(message)
+		} else if err2 != nil{
+			return errors.New(err2.Error())
+		}else{
+			return nil
+		}
+
 	})
 }

@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"reflect"
 	"strings"
+	"github.com/globalsign/mgo"
 )
 
 const (
@@ -24,6 +25,7 @@ type (
 		Data            interface{} // Data represents structure for JSON body
 		// Request         *http.Request
 		Body         map[string]interface{}
+		Collections map[string]*mgo.Collection
 		RequiredDefault bool    // RequiredDefault represents if all the fields are by default required or not
 		Rules           MapData // Rules represents rules for form-data/x-url-encoded/query params data
 		Messages        MapData // Messages represents custom/localize message for rules
@@ -36,6 +38,9 @@ type (
 		Opts Options // Opts contains all the options for validator
 	}
 )
+
+
+var GlobalV *Validator;
 
 // New return a new validator object using provided options
 func New(opts Options) *Validator {
@@ -75,6 +80,7 @@ func (v *Validator) SetTagIdentifier(identifier string) {
 // see example in README.md file
 // ref: https://github.com/thedevsaddam/govalidator#example
 func (v *Validator) Validate() url.Values {
+	GlobalV = v
 	// if request object and rules not passed rise a panic
 	if len(v.Opts.Rules) == 0 || v.Opts.Body == nil {
 		panic(errValidateArgsMismatch)
@@ -111,7 +117,11 @@ func (v *Validator) Validate() url.Values {
 				// reqVal := strings.TrimSpace(v.Opts.Request.Form.Get(field))
 				// reqVal := "value"
 				reqVal := strings.TrimSpace(fmt.Sprint(v.Opts.Body[field]))
+				// fmt.Println(reflect.TypeOf(field),reflect.TypeOf(v.Opts.Body))
 				// fmt.Println("value of field ",field,rule,reqVal)
+				// fmt.Println("alldata",v.Opts.Body[field])
+				// fmt.Println(reflect.TypeOf(field),"--->",field)
+				// fmt.Println("here -----> ",v.Opts.Body["project_id"])
 				validateCustomRules(field, rule, msg, reqVal, errsBag)
 			}
 		}
