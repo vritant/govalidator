@@ -30,10 +30,11 @@ func AddCustomRule(name string, fn func(field string, rule string, message strin
 func validateCustomRules(field string, rule string, message string, value interface{}, errsBag url.Values) {
 	for k, v := range rulesFuncMap {
 		if k == rule || strings.HasPrefix(rule, k+":") {
-			// fmt.Println(k,v)
-			err := v(field, rule, message, value)
-			if err != nil {
-				errsBag.Add(field, err.Error())
+			if len(errsBag.Get(field)) ==0{
+				err := v(field, rule, message, value)
+				if err != nil {
+					errsBag.Add(field, err.Error())
+				}
 			}
 			break
 		}
@@ -1095,6 +1096,7 @@ func init() {
 		// if object_id is valid mongo_id allow -- else reject
 
 		if bson.IsObjectIdHex(toString(value)){
+			fmt.Println("here -----> ","invalid objectid")
 			return nil
 		} else{
 			return errors.New("not a valid mongo object_id")
