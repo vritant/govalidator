@@ -29,6 +29,7 @@ func AddCustomRule(name string, fn func(field string, rule string, message strin
 func validateCustomRules(field string, rule string, message string, value interface{}, errsBag url.Values) {
 	for k, v := range rulesFuncMap {
 		if k == rule || strings.HasPrefix(rule, k+":") {
+			// fmt.Println(k,v)
 			err := v(field, rule, message, value)
 			if err != nil {
 				errsBag.Add(field, err.Error())
@@ -46,15 +47,24 @@ func init() {
 		if message != "" {
 			err = errors.New(message)
 		}
+
 		if value == nil {
 			return err
 		}
+
 		if _, ok := value.(multipart.File); ok {
 			return nil
 		}
+
 		rv := reflect.ValueOf(value)
+
 		switch rv.Kind() {
-		case reflect.String, reflect.Array, reflect.Slice, reflect.Map:
+
+		case reflect.String:
+			if(rv.String() == "<nil>"){
+				return err
+			}
+		case reflect.Array, reflect.Slice, reflect.Map:
 			if rv.Len() == 0 {
 				return err
 			}

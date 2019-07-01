@@ -3,7 +3,7 @@ package govalidator
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
+	// "net/http"
 	"net/url"
 	"reflect"
 	"strings"
@@ -22,7 +22,8 @@ type (
 	// Options describes configuration option for validator
 	Options struct {
 		Data            interface{} // Data represents structure for JSON body
-		Request         *http.Request
+		// Request         *http.Request
+		Body         map[string]interface{}
 		RequiredDefault bool    // RequiredDefault represents if all the fields are by default required or not
 		Rules           MapData // Rules represents rules for form-data/x-url-encoded/query params data
 		Messages        MapData // Messages represents custom/localize message for rules
@@ -75,16 +76,18 @@ func (v *Validator) SetTagIdentifier(identifier string) {
 // ref: https://github.com/thedevsaddam/govalidator#example
 func (v *Validator) Validate() url.Values {
 	// if request object and rules not passed rise a panic
-	if len(v.Opts.Rules) == 0 || v.Opts.Request == nil {
+	if len(v.Opts.Rules) == 0 || v.Opts.Body == nil {
 		panic(errValidateArgsMismatch)
 	}
 	errsBag := url.Values{}
 
 	// get non required rules
 	nr := v.getNonRequiredFields()
+	// fmt.Println("NonRequired fields --> ",nr)
 
 	for field, rules := range v.Opts.Rules {
 		if _, ok := nr[field]; ok {
+			fmt.Println("field is not required -->",field)
 			continue
 		}
 		for _, rule := range rules {
@@ -92,19 +95,23 @@ func (v *Validator) Validate() url.Values {
 				panic(fmt.Errorf("govalidator: %s is not a valid rule", rule))
 			}
 			msg := v.getCustomMessage(field, rule)
+
 			// validate file
 			if strings.HasPrefix(field, "file:") {
-				fld := strings.TrimPrefix(field, "file:")
-				file, fh, _ := v.Opts.Request.FormFile(fld)
-				if file != nil && fh.Filename != "" {
-					validateFiles(v.Opts.Request, fld, rule, msg, errsBag)
-					validateCustomRules(fld, rule, msg, file, errsBag)
-				} else {
-					validateCustomRules(fld, rule, msg, nil, errsBag)
-				}
+				// fld := strings.TrimPrefix(field, "file:")
+				// file, fh, _ := v.Opts.Request.FormFile(fld)
+				// if file != nil && fh.Filename != "" {
+				// 	validateFiles(v.Opts.Request, fld, rule, msg, errsBag)
+				// 	validateCustomRules(fld, rule, msg, file, errsBag)
+				// } else {
+				// 	validateCustomRules(fld, rule, msg, nil, errsBag)
+				// }
 			} else {
 				// validate if custom rules exist
-				reqVal := strings.TrimSpace(v.Opts.Request.Form.Get(field))
+				// reqVal := strings.TrimSpace(v.Opts.Request.Form.Get(field))
+				// reqVal := "value"
+				reqVal := strings.TrimSpace(fmt.Sprint(v.Opts.Body[field]))
+				// fmt.Println("value of field ",field,rule,reqVal)
 				validateCustomRules(field, rule, msg, reqVal, errsBag)
 			}
 		}
@@ -116,13 +123,13 @@ func (v *Validator) Validate() url.Values {
 // getNonRequiredFields remove non required rules fields from rules if requiredDefault field is false
 // and if the input data is empty for this field
 func (v *Validator) getNonRequiredFields() map[string]struct{} {
-	if v.Opts.FormSize > 0 {
-		_ = v.Opts.Request.ParseMultipartForm(v.Opts.FormSize)
-	} else {
-		_ = v.Opts.Request.ParseMultipartForm(defaultFormSize)
-	}
+	// if v.Opts.FormSize > 0 {
+	// 	_ = v.Opts.Request.ParseMultipartForm(v.Opts.FormSize)
+	// } else {
+	// 	_ = v.Opts.Request.ParseMultipartForm(defaultFormSize)
+	// }
 
-	inputs := v.Opts.Request.Form
+	inputs := v.Opts.Body
 	nr := make(map[string]struct{})
 	if !v.Opts.RequiredDefault {
 		for k, r := range v.Opts.Rules {
@@ -140,7 +147,7 @@ func (v *Validator) getNonRequiredFields() map[string]struct{} {
 // ValidateJSON validate request data from JSON body to Go struct
 // see example in README.md file
 func (v *Validator) ValidateJSON() url.Values {
-	if len(v.Opts.Rules) == 0 || v.Opts.Request == nil {
+	if len(v.Opts.Rules) == 0 || v.Opts.Body == nil {
 		panic(errValidateArgsMismatch)
 	}
 	if reflect.TypeOf(v.Opts.Data).Kind() != reflect.Ptr {
@@ -154,7 +161,7 @@ func (v *Validator) ValidateStruct() url.Values {
 	if len(v.Opts.Rules) == 0 {
 		panic(errRequireRules)
 	}
-	if v.Opts.Request != nil {
+	if v.Opts.Body != nil {
 		panic(errRequestNotAccepted)
 	}
 	if v.Opts.Data != nil && reflect.TypeOf(v.Opts.Data).Kind() != reflect.Ptr {
@@ -170,9 +177,9 @@ func (v *Validator) ValidateStruct() url.Values {
 func (v *Validator) internalValidateStruct() url.Values {
 	errsBag := url.Values{}
 
-	if v.Opts.Request != nil {
-		defer v.Opts.Request.Body.Close()
-		err := json.NewDecoder(v.Opts.Request.Body).Decode(v.Opts.Data)
+	if v.Opts.Body != nil {
+		body,_ := json.Marshal(v.Opts.Body)
+		err := json.Unmarshal(body, v.Opts.Data)
 		if err != nil {
 			errsBag.Add("_error", err.Error())
 			return errsBag
