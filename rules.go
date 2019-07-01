@@ -1091,6 +1091,17 @@ func init() {
 		return nil
 	})
 
+	AddCustomRule("objectID", func(field string, rule string, message string, value interface{}) error {
+		// if object_id is valid mongo_id allow -- else reject
+
+		if bson.IsObjectIdHex(toString(value)){
+			return nil
+		} else{
+			return errors.New("not a valid mongo object_id")
+		}
+
+	})
+
 
 	AddCustomRule("exists", func(field string, rule string, message string, value interface{}) error {
 
