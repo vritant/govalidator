@@ -93,7 +93,7 @@ func (v *Validator) Validate() url.Values {
 
 	for field, rules := range v.Opts.Rules {
 		if _, ok := nr[field]; ok {
-			fmt.Println("field is not required -->",field)
+			// fmt.Println("field is not required -->",field)
 			continue
 		}
 		for _, rule := range rules {
@@ -122,7 +122,7 @@ func (v *Validator) Validate() url.Values {
 				// fmt.Println("alldata",v.Opts.Body[field])
 				// fmt.Println(reflect.TypeOf(field),"--->",field)
 				// fmt.Println("here -----> ",v.Opts.Body["project_id"])
-				fmt.Println("here -----> ","rule here")
+				// fmt.Println("here -----> ","rule here")
 				validateCustomRules(field, rule, msg, reqVal, errsBag)
 			}
 		}
@@ -152,6 +152,7 @@ func (v *Validator) getNonRequiredFields() map[string]struct{} {
 			}
 		}
 	}
+
 	return nr
 }
 
